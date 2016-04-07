@@ -106,6 +106,7 @@ int check_section_footer(FILE *f, char *le, char *buff)
     }
 
     read_section_id = qemu_get_be32(f, buff);
+        printf("check_section_footer::%u\n", read_section_id);
 /*  if (read_section_id != le->section_id) {
         error_report("Mismatched section id in footer for %s -"
                      " read 0x%x expected 0x%x",
@@ -117,12 +118,13 @@ int check_section_footer(FILE *f, char *le, char *buff)
     return 1;
 }
 
-
 int ram_load(FILE *f, void *opaque, int version_id, char *buff)
 {
     int flags = 0, ret = 0;
     static uint64_t seq_iter;
+    char id[256];
     int len = 0;
+	static int flg;
 
     seq_iter++;
 
@@ -138,15 +140,15 @@ int ram_load(FILE *f, void *opaque, int version_id, char *buff)
      */
 //    rcu_read_lock();
     while (!ret && !(flags & RAM_SAVE_FLAG_EOS)) {
-        ram_addr_t addr, total_ram_bytes;
+        uint64_t addr, total_ram_bytes;
 	void *host;
         uint8_t ch;
 
         addr = qemu_get_be64(f, buff);
         flags = addr & ~TARGET_PAGE_MASK;
         addr &= TARGET_PAGE_MASK;
-        printf("%s\n Loadaddress_while_resuming:%x\n", __func__, addr);
-//printf("Ram_load::switch_statement:%d\n", flags & ~RAM_SAVE_FLAG_CONTINUE);
+        printf("Loadaddress_while_resuming:%lx\n", addr);
+printf("Ram_load::switch_statement:%d\n", flags & ~RAM_SAVE_FLAG_CONTINUE);
         switch (flags & ~RAM_SAVE_FLAG_CONTINUE) {
         case RAM_SAVE_FLAG_MEM_SIZE:
             /* Synchronize RAM block list */
@@ -155,7 +157,6 @@ int ram_load(FILE *f, void *opaque, int version_id, char *buff)
 	 
             while (!ret && total_ram_bytes) {
  //               RAMBlock *block;
-                char id[256];
                 ram_addr_t length;
 
                 len = qemu_get_byte(f, buff);
@@ -198,21 +199,28 @@ int ram_load(FILE *f, void *opaque, int version_id, char *buff)
                 error_report("Illegal RAM offset " RAM_ADDR_FMT, addr);
                 ret = -EINVAL;
                 break;
-            }
-            ch = qemu_get_byte(f);
-            ram_handle_compressed(host, ch, TARGET_PAGE_SIZE);*/
+            }*/
+            qemu_get_byte(f, buff);
+   //         ram_handle_compressed(host, ch, TARGET_PAGE_SIZE);
 	
 //		qemu_get_byte(f, buff);
             break;
         case RAM_SAVE_FLAG_PAGE:
-	      printf("RAM_SAVE_FLAG_PAGE:Address or the offset::%u\n", addr);
+	      printf("RAM_SAVE_FLAG_PAGE:Address or the offset::%p\n", addr);
+		if(!flg) {
+			    len = qemu_get_byte(f, buff);
+			    printf("len===%u\n", len);
+			 qemu_get_buffer(f, (uint8_t *)id, len);
+			flg = 1;
+		}
+	
 /*            host = host_from_stream_offset(f, addr, flags);
             if (!host) {
                 error_report("Illegal RAM offset " RAM_ADDR_FMT, addr);
                 ret = -EINVAL;
                 break;
             }*/
-//            qemu_get_buffer(f, buff, TARGET_PAGE_SIZE);
+            qemu_get_buffer(f, buff, TARGET_PAGE_SIZE);
             break;
         case RAM_SAVE_FLAG_COMPRESS_PAGE:
 	      printf("RAM_SAVE_FLAG_COMPRESS_PAGE:Address or the offset::%u\n", addr);
@@ -233,6 +241,7 @@ int ram_load(FILE *f, void *opaque, int version_id, char *buff)
             decompress_data_with_multi_threads(compressed_data_buf, host, len);*/
             break;
         case RAM_SAVE_FLAG_XBZRLE:
+	      printf("RAM_SAVE_FLAG_XBZRLE:Address or the offset::%u\n", addr);
 /*            host = host_from_stream_offset(f, addr, flags);
             if (!host) {
                 error_report("Illegal RAM offset " RAM_ADDR_FMT, addr);

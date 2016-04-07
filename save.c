@@ -154,14 +154,16 @@ int main()
 					      ret = -EINVAL;
 					      goto out;
 					      }*/
-                                              if (version_id == 4) {
+                                             if (version_id == 4) {
 						memset(buff, '\0', 32768);
+						printf("hello\n");
                                               ret = ram_load(fp, NULL, version_id, buff);
 						}
                                               else {
                                               ret = 0;
-						memset(buff, '\0', 32768);
-						printf("%x\n", qemu_get_be32(fp, buff));	
+					      memset(buff, '\0', 32768);
+					     printf("%s\n", qemu_get_be32(fp, buff));	
+					//	version_id =4;
 //                                              memset(buff, '\0', 32768);
 //                                              printf("%x\n", qemu_get_be32(fp, buff));
 						}
